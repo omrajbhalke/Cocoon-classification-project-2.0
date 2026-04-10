@@ -1,7 +1,3 @@
-/* ═══════════════════════════════════════════════
-   SilkSense AI — app.js
-   ═══════════════════════════════════════════════ */
-
 const API_BASE = 'http://127.0.0.1:5000';
 
 // Renditta lookup table (DC% → Renditta)
@@ -281,33 +277,48 @@ function getClosestRenditta(defectPct) {
 }
 
 function calcYield() {
-  const defPct  = parseFloat(yieldDefect.value);
-  const weight  = parseFloat(yieldWeight.value);
+  const defPct   = parseFloat(yieldDefect.value);
+  const weight   = parseFloat(yieldWeight.value);
+  const moisture = parseFloat(document.getElementById('yieldMoisture').value);
 
   if (isNaN(defPct) || isNaN(weight) || weight <= 0) {
     alert('Please enter a valid cocoon weight.');
     return;
   }
 
+  // Validate moisture range
+  if (isNaN(moisture) || moisture < 10 || moisture > 25) {
+    alert('Moisture should be between 10% and 25% for realistic estimation.');
+    return;
+  }
+
   const qualPct  = 100 - defPct;
   const { dc, renditta } = getClosestRenditta(defPct);
 
-  const silkKg   = weight / renditta;
-  const ratio    = (silkKg / weight) * 100;
-  const grade    = qualPct >= 70 ? 'A' : qualPct >= 50 ? 'B' : 'C';
+  // Moisture-adjusted effective weight
+  const moisture_factor    = moisture / 100;
+  const effective_weight   = weight * (1 - moisture_factor);
 
-  document.getElementById('yoSilk').textContent     = silkKg.toFixed(2);
-  document.getElementById('yoRenditta').textContent = renditta.toFixed(3);
+  // Updated silk yield formula
+  const silkKg = effective_weight / renditta;
+
+  const ratio  = (silkKg / weight) * 100;
+  const grade  = qualPct >= 70 ? 'A' : qualPct >= 50 ? 'B' : 'C';
+
+  document.getElementById('yoSilk').textContent      = silkKg.toFixed(2);
+  document.getElementById('yoRenditta').textContent  = renditta.toFixed(3);
   document.getElementById('yoDefectUsed').textContent = `${dc}% (matched)`;
-  document.getElementById('yoRatio').textContent    = `${ratio.toFixed(2)}%`;
-  document.getElementById('yoGrade').textContent    = `Grade ${grade}`;
+  document.getElementById('yoMoisture').textContent  = `${moisture}%`;
+  document.getElementById('yoEffWeight').textContent = `${effective_weight.toFixed(2)} kg`;
+  document.getElementById('yoRatio').textContent     = `${ratio.toFixed(2)}%`;
+  document.getElementById('yoGrade').textContent     = `Grade ${grade}`;
 
-  // Improvement insight
+  // Improvement insight (based on original weight for fair comparison)
   const impBox  = document.getElementById('improvementBox');
   const impText = document.getElementById('improvementText');
   if (defPct > 5) {
     const bestRenditta = RENDITTA_DATA[5];
-    const bestSilk = weight / bestRenditta;
+    const bestSilk = effective_weight / bestRenditta;
     const delta = (bestSilk - silkKg).toFixed(2);
     impText.innerHTML = `Reducing defects to <strong>5%</strong> would yield an extra <strong>${delta} kg</strong> of silk — from ${silkKg.toFixed(2)} kg to <strong>${bestSilk.toFixed(2)} kg</strong>.`;
     impBox.style.display = 'flex';

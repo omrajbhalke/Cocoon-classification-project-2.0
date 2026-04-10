@@ -23,9 +23,9 @@
       <h1 class="hero-title">Silk<span class="accent">Sense</span></h1>
       <p class="hero-sub">Automated Cocoon Quality Assessment &amp; Silk Yield Estimation<br/>powered by deep learning segmentation &amp; classification</p>
       <div class="hero-stats">
-        <div class="hstat"><span class="hstat-val">97%</span><span class="hstat-lbl">Detection Accuracy</span></div>
+        <div class="hstat"><span class="hstat-val">99.2%</span><span class="hstat-lbl">Detection Accuracy</span></div>
         <div class="hstat-div"></div>
-        <div class="hstat"><span class="hstat-val">3</span><span class="hstat-lbl">ML Models</span></div>
+        <div class="hstat"><span class="hstat-val">2</span><span class="hstat-lbl">AI Models</span></div>
         <div class="hstat-div"></div>
         <div class="hstat"><span class="hstat-val">Real-time</span><span class="hstat-lbl">Processing</span></div>
       </div>
@@ -210,6 +210,15 @@
               </div>
             </div>
 
+            <!-- NEW: Moisture Content -->
+            <div class="yf-group">
+              <label class="yf-label">Moisture Content (%)</label>
+              <div class="yf-input-wrap">
+                <input type="number" id="yieldMoisture" min="10" max="25" step="0.1" placeholder="e.g. 12" />
+                <span class="yf-unit">%</span>
+              </div>
+            </div>
+
           </div>
 
           <button class="cta-btn" id="calcBtn">
@@ -227,6 +236,8 @@
           <div class="yo-details">
             <div class="yo-row"><span>Renditta Index</span><strong id="yoRenditta">—</strong></div>
             <div class="yo-row"><span>Defect %</span><strong id="yoDefectUsed">—</strong></div>
+            <div class="yo-row"><span>Moisture Content</span><strong id="yoMoisture">—</strong></div>
+            <div class="yo-row"><span>Effective Weight</span><strong id="yoEffWeight">—</strong></div>
             <div class="yo-row"><span>Silk Yield Ratio</span><strong id="yoRatio">—</strong></div>
             <div class="yo-row"><span>Grade</span><strong id="yoGrade">—</strong></div>
           </div>
