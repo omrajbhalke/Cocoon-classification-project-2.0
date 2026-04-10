@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SilkSense AI — Cocoon Intelligence Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══ HERO ═══ -->
+  <header class="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-orb hero-orb--1"></div>
+    <div class="hero-orb hero-orb--2"></div>
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        AI-Powered Agri Intelligence
+      </div>
+      <h1 class="hero-title">Silk<span class="accent">Sense</span></h1>
+      <p class="hero-sub">Automated Cocoon Quality Assessment &amp; Silk Yield Estimation<br/>powered by deep learning segmentation &amp; classification</p>
+      <div class="hero-stats">
+        <div class="hstat"><span class="hstat-val">97%</span><span class="hstat-lbl">Detection Accuracy</span></div>
+        <div class="hstat-div"></div>
+        <div class="hstat"><span class="hstat-val">3</span><span class="hstat-lbl">ML Models</span></div>
+        <div class="hstat-div"></div>
+        <div class="hstat"><span class="hstat-val">Real-time</span><span class="hstat-lbl">Processing</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <main class="main">
+
+    <!-- ── STEP 1: Upload ── -->
+    <section class="section upload-section" id="sec-upload">
+      <div class="section-label"><span class="step-num">01</span> Image Input</div>
+      <h2 class="section-title">Upload Cocoon Sample</h2>
+      <p class="section-desc">Drag &amp; drop your image or click to browse. Our AI will instantly detect, segment, and classify every cocoon.</p>
+
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept="image/*" hidden />
+        <div class="upload-icon">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="23" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M24 32V18M24 18L18 24M24 18L30 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="upload-title">Drop image here</p>
+        <p class="upload-hint">or <span class="upload-link" id="browseLink">browse files</span></p>
+        <p class="upload-formats">JPG · PNG · WEBP — up to 20MB</p>
+
+        <div class="preview-wrap" id="previewWrap" style="display:none">
+          <img id="previewImg" alt="Preview" />
+          <div class="preview-overlay">
+            <button class="preview-change" id="changeBtn">Change Image</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="cta-btn" id="analyzeBtn" disabled>
+        <span class="btn-text">Analyse Cocoons</span>
+        <svg class="btn-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </section>
+
+    <!-- ── STEP 2: Processing ── -->
+    <section class="section processing-section" id="sec-processing" style="display:none">
+      <div class="processing-inner">
+        <div class="proc-spinner">
+          <svg viewBox="0 0 60 60" class="spin-ring"><circle cx="30" cy="30" r="26" fill="none" stroke="var(--green)" stroke-width="3" stroke-dasharray="163" stroke-dashoffset="40"/></svg>
+          <div class="proc-pulse"></div>
+        </div>
+        <div class="proc-steps" id="procSteps">
+          <div class="proc-step active" id="ps1"><span class="ps-dot"></span>Uploading image…</div>
+          <div class="proc-step" id="ps2"><span class="ps-dot"></span>Running YOLO segmentation…</div>
+          <div class="proc-step" id="ps3"><span class="ps-dot"></span>Classifying each cocoon…</div>
+          <div class="proc-step" id="ps4"><span class="ps-dot"></span>Generating quality report…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── STEP 3: Results Dashboard ── -->
+    <section class="section results-section" id="sec-results" style="display:none">
+      <div class="section-label"><span class="step-num">02</span> Quality Report</div>
+      <h2 class="section-title">Detection Results</h2>
+
+      <div class="results-grid">
+
+        <!-- Annotated Image -->
+        <div class="result-image-card">
+          <div class="card-header">Annotated Output</div>
+          <div class="annotated-wrap">
+            <img id="annotatedImg" alt="Annotated cocoon image" />
+            <div class="img-legend">
+              <span class="leg-item leg-ok"><span class="leg-dot"></span>Qualified</span>
+              <span class="leg-item leg-def"><span class="leg-dot"></span>Defective</span>
+            </div>
+            <button class="zoom-btn" id="zoomBtn" title="Expand">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Metrics + Chart -->
+        <div class="result-metrics">
+
+          <!-- Stat Cards -->
+          <div class="metric-cards">
+            <div class="metric-card mc-total">
+              <div class="mc-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M11 7v4l3 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </div>
+              <div class="mc-body">
+                <div class="mc-val" id="statTotal">—</div>
+                <div class="mc-lbl">Total Cocoons</div>
+              </div>
+            </div>
+            <div class="metric-card mc-good">
+              <div class="mc-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 11l5 5 9-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="mc-body">
+                <div class="mc-val" id="statQualified">—</div>
+                <div class="mc-lbl">Qualified</div>
+              </div>
+            </div>
+            <div class="metric-card mc-defect">
+              <div class="mc-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 5l12 12M17 5L5 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </div>
+              <div class="mc-body">
+                <div class="mc-val" id="statDefect">—</div>
+                <div class="mc-lbl">Defective</div>
+              </div>
+            </div>
+            <div class="metric-card mc-grade">
+              <div class="mc-icon">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><polygon points="11,2 13.9,8.6 21,9.3 15.5,14.1 17.2,21 11,17.3 4.8,21 6.5,14.1 1,9.3 8.1,8.6" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+              </div>
+              <div class="mc-body">
+                <div class="mc-val" id="statGrade">—</div>
+                <div class="mc-lbl">Grade</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Doughnut Chart -->
+          <div class="donut-card">
+            <div class="donut-title">Quality Distribution</div>
+            <div class="donut-wrap">
+              <svg class="donut-svg" viewBox="0 0 160 160" id="donutSvg">
+                <circle class="donut-bg" cx="80" cy="80" r="60" fill="none" stroke="#1e2533" stroke-width="22"/>
+                <circle class="donut-green" cx="80" cy="80" r="60" fill="none" stroke="var(--green)" stroke-width="22" stroke-dasharray="377 377" stroke-dashoffset="377" stroke-linecap="round" transform="rotate(-90 80 80)" id="donutGreen"/>
+                <circle class="donut-red" cx="80" cy="80" r="60" fill="none" stroke="var(--red)" stroke-width="22" stroke-dasharray="377 377" stroke-dashoffset="377" stroke-linecap="round" transform="rotate(-90 80 80)" id="donutRed"/>
+              </svg>
+              <div class="donut-center">
+                <div class="donut-pct" id="donutPct">0%</div>
+                <div class="donut-sub">Qualified</div>
+              </div>
+            </div>
+            <div class="donut-legend">
+              <span><span class="dl-dot" style="background:var(--green)"></span>Qualified <b id="dlGoodPct">0%</b></span>
+              <span><span class="dl-dot" style="background:var(--red)"></span>Defective <b id="dlBadPct">0%</b></span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- AI Insight -->
+      <div class="insight-card" id="insightCard">
+        <div class="insight-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.3 4.7-3.3 6-.4.3-.7.7-.7 1.2V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-.8c0-.5-.3-.9-.7-1.2A7 7 0 0 1 12 2z" stroke="currentColor" stroke-width="1.6"/><path d="M9 21h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="insight-body">
+          <div class="insight-label">AI Insight</div>
+          <p class="insight-text" id="insightText">Analysing quality parameters…</p>
+        </div>
+        <div class="insight-badge" id="insightBadge">—</div>
+      </div>
+
+    </section>
+
+    <!-- ── STEP 4: Yield Estimation ── -->
+    <section class="section yield-section" id="sec-yield" style="display:none">
+      <div class="section-label"><span class="step-num">03</span> Yield Estimation</div>
+      <h2 class="section-title">Silk Yield Calculator</h2>
+      <p class="section-desc">Defect % is auto-filled from the analysis above. Enter your cocoon quantity to estimate silk output.</p>
+
+      <div class="yield-grid">
+
+        <div class="yield-form-card">
+          <div class="yield-inputs">
+
+            <div class="yf-group">
+              <label class="yf-label">Defect Percentage (%)</label>
+              <div class="yf-input-wrap auto-tag">
+                <input type="number" id="yieldDefect" step="0.01" min="0" max="100" readonly placeholder="Auto-filled" />
+                <span class="auto-pill">AUTO</span>
+              </div>
+            </div>
+
+            <div class="yf-group">
+              <label class="yf-label">Cocoon Quantity (kg)</label>
+              <div class="yf-input-wrap">
+                <input type="number" id="yieldWeight" step="0.1" min="0.1" placeholder="e.g. 100" />
+                <span class="yf-unit">kg</span>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="cta-btn" id="calcBtn">
+            <span class="btn-text">Estimate Silk Yield</span>
+            <svg class="btn-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M12 6l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <!-- Yield Output -->
+        <div class="yield-output-card" id="yieldOutput" style="display:none">
+          <div class="yo-top">
+            <div class="yo-label">Estimated Silk Production</div>
+            <div class="yo-value"><span id="yoSilk">—</span> <span class="yo-unit">kg</span></div>
+          </div>
+          <div class="yo-details">
+            <div class="yo-row"><span>Renditta Index</span><strong id="yoRenditta">—</strong></div>
+            <div class="yo-row"><span>Defect %</span><strong id="yoDefectUsed">—</strong></div>
+            <div class="yo-row"><span>Silk Yield Ratio</span><strong id="yoRatio">—</strong></div>
+            <div class="yo-row"><span>Grade</span><strong id="yoGrade">—</strong></div>
+          </div>
+
+          <!-- Improvement insight -->
+          <div class="improvement-box" id="improvementBox" style="display:none">
+            <div class="imp-icon">💡</div>
+            <div class="imp-text" id="improvementText"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close" id="lbClose">&times;</button>
+    <img id="lbImg" alt="Full view" />
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
