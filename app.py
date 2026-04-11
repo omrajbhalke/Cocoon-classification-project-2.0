@@ -145,33 +145,16 @@ def process_image(image):
 
 
 def predict_renditta(defect_pct):
-    """
-    Predict renditta using the sklearn model + poly_transform.
-    Falls back to lookup table if models are unavailable.
-    """
-    if renditta_model is not None and poly_transform is not None:
-        try:
-            X = np.array([[defect_pct]])
-            X_poly = poly_transform.transform(X)
-            renditta = float(renditta_model.predict(X_poly)[0])
-            return round(renditta, 4), "ml_model"
-        except Exception as e:
-            print(f"  Renditta model prediction failed: {e}")
-
-    # Fallback lookup table
-    RENDITTA_TABLE = {
-        5:6.25, 5.5:6.258, 6:6.3, 6.5:6.35, 7:6.358, 7.5:6.35,
-        8:6.442, 8.5:6.45, 9:6.492, 9.5:6.533, 10:6.55,
-        10.5:6.642, 11:6.625, 11.5:6.65, 12:6.675, 12.5:6.717,
-        13:6.75, 13.5:6.775, 14:6.817, 14.5:6.85, 15:6.85,
-        15.5:6.9, 16:6.942, 16.5:6.942, 17:6.983, 17.5:7.033,
-        18:7.05, 18.5:7.083, 19:7.133, 19.5:7.15, 20:7.175,
-        20.5:7.225, 21:7.25, 21.5:7.267, 22:7.317, 22.5:7.35,
-        23:7.358, 23.5:7.408, 24:7.45, 24.5:7.45, 25:7.5
-    }
-    keys = list(RENDITTA_TABLE.keys())
-    closest = min(keys, key=lambda k: abs(defect_pct - k))
-    return round(RENDITTA_TABLE[closest], 4), "lookup_table"
+    """Predict renditta using poly_transform + best_model (Polynomial Regression Degree 2)."""
+    if renditta_model is None or poly_transform is None:
+        raise Exception(
+            "Renditta ML model not loaded. "
+            "Ensure best_model.pkl and poly_transform.pkl are in the project folder."
+        )
+    X = np.array([[defect_pct]])
+    X_poly = poly_transform.transform(X)
+    renditta = float(renditta_model.predict(X_poly)[0])
+    return round(renditta, 4)
 
 
 # ── Routes ────────────────────────────────────
@@ -228,39 +211,54 @@ def classify_cocoon():
 @app.route('/yield', methods=['POST'])
 def estimate_yield():
     """
-    Estimate silk yield using the trained renditta model.
-    Expects JSON: { "defect_pct": float, "cocoon_weight_kg": float }
+    Estimate silk yield using the trained Polynomial Regression renditta model.
+    Expects JSON: { "defect_pct": float, "cocoon_weight_kg": float, "moisture_pct": float }
     """
     data = request.get_json()
     if not data:
         return jsonify({"error": "No JSON data provided"}), 400
 
-    defect_pct     = float(data.get('defect_pct', 0))
-    cocoon_weight  = float(data.get('cocoon_weight_kg', 0))
+    defect_pct    = float(data.get('defect_pct', 0))
+    cocoon_weight = float(data.get('cocoon_weight_kg', 0))
+    moisture_pct  = float(data.get('moisture_pct', 0))
 
     if cocoon_weight <= 0:
         return jsonify({"error": "Cocoon weight must be greater than 0"}), 400
     if not (0 <= defect_pct <= 100):
         return jsonify({"error": "Defect percentage must be between 0 and 100"}), 400
+    if not (10 <= moisture_pct <= 25):
+        return jsonify({"error": "Moisture must be between 10% and 25%"}), 400
 
-    renditta, source = predict_renditta(defect_pct)
-    silk_kg          = cocoon_weight / renditta
-    qual_pct         = 100 - defect_pct
-    ratio            = (silk_kg / cocoon_weight) * 100
-    grade            = 'A' if qual_pct >= 70 else ('B' if qual_pct >= 50 else 'C')
+    try:
+        renditta = predict_renditta(defect_pct)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    # Improvement potential
-    best_renditta, _ = predict_renditta(5)
-    best_silk        = cocoon_weight / best_renditta
-    improvement      = round(best_silk - silk_kg, 3)
+    # Moisture-adjusted effective weight
+    effective_weight = cocoon_weight * (1 - moisture_pct / 100)
+
+    silk_kg  = effective_weight / renditta
+    ratio    = (silk_kg / cocoon_weight) * 100
+    qual_pct = 100 - defect_pct
+    grade    = 'A' if qual_pct >= 70 else ('B' if qual_pct >= 50 else 'C')
+
+    # Improvement potential at 5% defect
+    improvement = 0
+    if defect_pct > 5:
+        try:
+            best_renditta = predict_renditta(5)
+            best_silk     = effective_weight / best_renditta
+            improvement   = round(best_silk - silk_kg, 3)
+        except:
+            pass
 
     return jsonify({
-        "renditta":            renditta,
-        "renditta_source":     source,
-        "silk_produced_kg":    round(silk_kg, 3),
-        "silk_yield_ratio_pct": round(ratio, 2),
-        "grade":               grade,
-        "improvement_kg":      improvement if defect_pct > 5 else 0,
+        "renditta":              renditta,
+        "effective_weight_kg":   round(effective_weight, 3),
+        "silk_produced_kg":      round(silk_kg, 3),
+        "silk_yield_ratio_pct":  round(ratio, 2),
+        "grade":                 grade,
+        "improvement_kg":        improvement,
     })
 
 

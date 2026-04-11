@@ -1,14 +1,6 @@
 const API_BASE = 'http://127.0.0.1:5000';
 
-// Renditta lookup table (DC% → Renditta)
-const RENDITTA_DATA = {
-  5:6.25,5.5:6.258,6:6.3,6.5:6.35,7:6.358,7.5:6.35,8:6.442,8.5:6.45,
-  9:6.492,9.5:6.533,10:6.55,10.5:6.642,11:6.625,11.5:6.65,12:6.675,
-  12.5:6.717,13:6.75,13.5:6.775,14:6.817,14.5:6.85,15:6.85,15.5:6.9,
-  16:6.942,16.5:6.942,17:6.983,17.5:7.033,18:7.05,18.5:7.083,
-  19:7.133,19.5:7.15,20:7.175,20.5:7.225,21:7.25,21.5:7.267,
-  22:7.317,22.5:7.35,23:7.358,23.5:7.408,24:7.45,24.5:7.45,25:7.5
-};
+// Renditta is predicted by the Flask backend ML model — no lookup table here.
 
 // ─── DOM refs ─────────────────────────────────
 const uploadZone   = document.getElementById('uploadZone');
@@ -265,18 +257,7 @@ lightbox.addEventListener('click', e => {
 // ─── Yield Calculator ─────────────────────────
 calcBtn.addEventListener('click', calcYield);
 
-function getClosestRenditta(defectPct) {
-  const keys = Object.keys(RENDITTA_DATA).map(Number);
-  let closest = keys[0];
-  let minDiff = Math.abs(defectPct - closest);
-  for (const k of keys) {
-    const diff = Math.abs(defectPct - k);
-    if (diff < minDiff) { minDiff = diff; closest = k; }
-  }
-  return { dc: closest, renditta: RENDITTA_DATA[closest] };
-}
-
-function calcYield() {
+async function calcYield() {
   const defPct   = parseFloat(yieldDefect.value);
   const weight   = parseFloat(yieldWeight.value);
   const moisture = parseFloat(document.getElementById('yieldMoisture').value);
@@ -285,49 +266,61 @@ function calcYield() {
     alert('Please enter a valid cocoon weight.');
     return;
   }
-
-  // Validate moisture range
   if (isNaN(moisture) || moisture < 10 || moisture > 25) {
     alert('Moisture should be between 10% and 25% for realistic estimation.');
     return;
   }
 
-  const qualPct  = 100 - defPct;
-  const { dc, renditta } = getClosestRenditta(defPct);
+  // Disable button while waiting
+  calcBtn.disabled = true;
+  calcBtn.querySelector('.btn-text').textContent = 'Calculating…';
 
-  // Moisture-adjusted effective weight
-  const moisture_factor    = moisture / 100;
-  const effective_weight   = weight * (1 - moisture_factor);
+  try {
+    const res = await fetch(`${API_BASE}/yield`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        defect_pct:       defPct,
+        cocoon_weight_kg: weight,
+        moisture_pct:     moisture
+      })
+    });
 
-  // Updated silk yield formula
-  const silkKg = effective_weight / renditta;
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Yield estimation failed');
+    }
 
-  const ratio  = (silkKg / weight) * 100;
-  const grade  = qualPct >= 70 ? 'A' : qualPct >= 50 ? 'B' : 'C';
+    const d = await res.json();
 
-  document.getElementById('yoSilk').textContent      = silkKg.toFixed(2);
-  document.getElementById('yoRenditta').textContent  = renditta.toFixed(3);
-  document.getElementById('yoDefectUsed').textContent = `${dc}% (matched)`;
-  document.getElementById('yoMoisture').textContent  = `${moisture}%`;
-  document.getElementById('yoEffWeight').textContent = `${effective_weight.toFixed(2)} kg`;
-  document.getElementById('yoRatio').textContent     = `${ratio.toFixed(2)}%`;
-  document.getElementById('yoGrade').textContent     = `Grade ${grade}`;
+    document.getElementById('yoSilk').textContent      = d.silk_produced_kg.toFixed(2);
+    document.getElementById('yoRenditta').textContent  = d.renditta.toFixed(3);
+    document.getElementById('yoDefectUsed').textContent = `${defPct.toFixed(2)}%`;
+    document.getElementById('yoMoisture').textContent  = `${moisture}%`;
+    document.getElementById('yoEffWeight').textContent = `${d.effective_weight_kg.toFixed(2)} kg`;
+    document.getElementById('yoRatio').textContent     = `${d.silk_yield_ratio_pct.toFixed(2)}%`;
+    document.getElementById('yoGrade').textContent     = `Grade ${d.grade}`;
 
-  // Improvement insight (based on original weight for fair comparison)
-  const impBox  = document.getElementById('improvementBox');
-  const impText = document.getElementById('improvementText');
-  if (defPct > 5) {
-    const bestRenditta = RENDITTA_DATA[5];
-    const bestSilk = effective_weight / bestRenditta;
-    const delta = (bestSilk - silkKg).toFixed(2);
-    impText.innerHTML = `Reducing defects to <strong>5%</strong> would yield an extra <strong>${delta} kg</strong> of silk — from ${silkKg.toFixed(2)} kg to <strong>${bestSilk.toFixed(2)} kg</strong>.`;
-    impBox.style.display = 'flex';
-  } else {
-    impBox.style.display = 'none';
+    // Improvement insight
+    const impBox  = document.getElementById('improvementBox');
+    const impText = document.getElementById('improvementText');
+    if (d.improvement_kg > 0) {
+      const improved = (d.silk_produced_kg + d.improvement_kg).toFixed(2);
+      impText.innerHTML = `Reducing defects to <strong>5%</strong> would yield an extra <strong>${d.improvement_kg.toFixed(2)} kg</strong> of silk — from ${d.silk_produced_kg.toFixed(2)} kg to <strong>${improved} kg</strong>.`;
+      impBox.style.display = 'flex';
+    } else {
+      impBox.style.display = 'none';
+    }
+
+    yieldOutput.style.display = 'block';
+    yieldOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  } catch (err) {
+    alert('Yield estimation failed: ' + err.message);
+  } finally {
+    calcBtn.disabled = false;
+    calcBtn.querySelector('.btn-text').textContent = 'Estimate Silk Yield';
   }
-
-  yieldOutput.style.display = 'block';
-  yieldOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // ─── Scroll Reveal ────────────────────────────
